@@ -10,12 +10,12 @@
   <!-- Open Graph -->
   <meta property="og:title" content="Are U OK" />
   <meta property="og:description" content="A gentle daily check-in app that keeps you connected with loved ones." />
-  <meta property="og:image" content="https://are-u-ok.com/icon.jpg" />
+  <meta property="og:image" content="https://are-u-ok.com/icon.png" />
   <meta property="og:url" content="https://are-u-ok.com" />
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="icon.jpg" />
-  <link rel="apple-touch-icon" href="icon.jpg" />
+  <link rel="icon" type="image/png" href="icon.png" />
+  <link rel="apple-touch-icon" href="icon.png" />
 
   <style>
     * {
@@ -428,20 +428,28 @@
       starsContainer.appendChild(star);
     }
 
-    // Check for auth redirects (email confirmation, etc.)
+    // Check for auth redirects (email confirmation, password reset, etc.)
     const hash = window.location.hash;
     const params = new URLSearchParams(hash.substring(1));
+    const type = params.get('type');
 
-    if (params.get('type') === 'signup' || params.get('type') === 'email_change') {
-      document.getElementById('auth-message').classList.add('show');
+    // Password reset - redirect to reset-password page
+    if (type === 'recovery' && params.get('access_token')) {
+      window.location.href = '/reset-password.html' + hash;
     }
+    // Email confirmation
+    else if (type === 'signup' || type === 'email_change' || type === 'magiclink') {
+      document.getElementById('auth-message').classList.add('show');
 
-    // If on mobile, try to open the app for auth callbacks
-    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-      if (params.get('access_token') && params.get('type') !== 'recovery') {
-        // Try to open the app with the token
-        window.location.href = 'areuok://' + window.location.hash;
+      // If on mobile, try to open the app
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        window.location.href = 'areuok://' + hash;
       }
+    }
+    // Invite (emergency contact accepting invite)
+    else if (type === 'invite') {
+      // Redirect to reset-password to set their password
+      window.location.href = '/reset-password.html' + hash;
     }
   </script>
 </body>
