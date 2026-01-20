@@ -416,6 +416,10 @@
   </div>
 
   <script>
+    // Supabase configuration
+    const SUPABASE_URL = 'https://keqmtjewyignyuffqjdv.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlcW10amV3eWlnbnl1ZmZxamR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc0MDI5MjQsImV4cCI6MjA1Mjk3ODkyNH0.hFj8vYWBJfeYfMhyXfcnPLOBpGf8MNBncEJvdWSx93s';
+
     // Create animated stars
     const starsContainer = document.getElementById('stars');
     for (let i = 0; i < 50; i++) {
@@ -428,29 +432,53 @@
       starsContainer.appendChild(star);
     }
 
-    // Check for auth redirects (email confirmation, password reset, etc.)
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.substring(1));
-    const type = params.get('type');
+    // Handle PKCE code (Supabase returns ?code=xxx for password reset)
+    function handlePKCECode() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
 
-    // Password reset - redirect to reset-password page
-    if (type === 'recovery' && params.get('access_token')) {
-      window.location.href = '/reset-password.html' + hash;
+      if (code) {
+        // Redirect to reset-password page which will handle the code exchange
+        console.log('PKCE code detected, redirecting to reset-password...');
+        window.location.href = `/reset-password.html?code=${code}`;
+        return true;
+      }
+      return false;
     }
-    // Email confirmation
-    else if (type === 'signup' || type === 'email_change' || type === 'magiclink') {
-      document.getElementById('auth-message').classList.add('show');
 
-      // If on mobile, try to open the app
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        window.location.href = 'areuok://' + hash;
+    // Check for auth redirects
+    function handleAuthRedirects() {
+      // First check for PKCE code in query string
+      if (handlePKCECode()) {
+        return;
+      }
+
+      // Check hash parameters (older flow)
+      const hash = window.location.hash;
+      const params = new URLSearchParams(hash.substring(1));
+      const type = params.get('type');
+
+      // Password reset - redirect to reset-password page
+      if (type === 'recovery' && params.get('access_token')) {
+        window.location.href = '/reset-password.html' + hash;
+      }
+      // Email confirmation
+      else if (type === 'signup' || type === 'email_change' || type === 'magiclink') {
+        document.getElementById('auth-message').classList.add('show');
+
+        // If on mobile, try to open the app
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+          window.location.href = 'areuok://' + hash;
+        }
+      }
+      // Invite (emergency contact accepting invite)
+      else if (type === 'invite') {
+        // Redirect to reset-password to set their password
+        window.location.href = '/reset-password.html' + hash;
       }
     }
-    // Invite (emergency contact accepting invite)
-    else if (type === 'invite') {
-      // Redirect to reset-password to set their password
-      window.location.href = '/reset-password.html' + hash;
-    }
+
+    handleAuthRedirects();
   </script>
 </body>
 </html>
